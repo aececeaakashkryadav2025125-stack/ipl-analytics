@@ -47,4 +47,18 @@ def get_matches():
     if upcoming:
         return upcoming, "upcoming"
 
-    return [], "none"
+    # 🔥 DEMO FALLBACK (VERY IMPORTANT)
+    return [
+        {
+            "team1": "Chennai Super Kings",
+            "team2": "Mumbai Indians",
+            "venue": "Wankhede Stadium",
+            "date": "Today 7:30 PM"
+        },
+        {
+            "team1": "RCB",
+            "team2": "KKR",
+            "venue": "Chinnaswamy Stadium",
+            "date": "Tomorrow 7:30 PM"
+        }
+    ], "demo"

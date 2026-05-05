@@ -14,11 +14,15 @@ matches, match_type = get_matches()
 # ---- UI ----
 if matches:
 
+    # ✅ FIXED INDENTATION
     if match_type == "live":
         st.success("🔴 Live Matches")
     elif match_type == "upcoming":
         st.info("📅 Upcoming Matches")
+    elif match_type == "demo":
+        st.warning("⚠️ Demo Matches (API returned no data)")
 
+    # ✅ SHOW CARDS FOR ALL CASES
     cols = st.columns(3)
 
     for i, match in enumerate(matches[:6]):
