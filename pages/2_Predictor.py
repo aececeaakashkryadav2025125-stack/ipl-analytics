@@ -6,35 +6,64 @@ import matplotlib.pyplot as plt
 # ---- LOAD MODEL ----
 model = pickle.load(open('models/model.pkl', 'rb'))
 
-st.title("🤖 IPL Win Predictor")
+st.set_page_config(layout="wide")
 
+st.title("🔮 IPL Win Predictor")
+
+# ---- TEAMS ----
 teams = [
-    "Mumbai Indians", "Chennai Super Kings", "RCB",
-    "KKR", "Delhi Capitals", "Punjab Kings"
+    "Mumbai Indians",
+    "Chennai Super Kings",
+    "RCB",
+    "KKR",
+    "Delhi Capitals",
+    "Punjab Kings"
 ]
+
+# ---- SESSION AUTO-FILL (IMPORTANT FIX) ----
+default_batting = st.session_state.get("batting_team", teams[0])
+default_bowling = st.session_state.get("bowling_team", teams[1])
+
+# fallback safety (if API sends unknown team)
+if default_batting not in teams:
+    default_batting = teams[0]
+
+if default_bowling not in teams:
+    default_bowling = teams[1]
 
 # ---- INPUT UI ----
 col1, col2 = st.columns(2)
 
 with col1:
-    batting_team = st.selectbox("Batting Team", teams)
-    balls_left = st.slider("Balls Left", 1, 120, 60)
-    current_score = st.number_input("Current Score", min_value=0, value=100)
+    batting_team = st.selectbox(
+        "Batting Team",
+        teams,
+        index=teams.index(default_batting)
+    )
 
 with col2:
-    bowling_team = st.selectbox("Bowling Team", teams)
-    wickets_left = st.slider("Wickets Left", 0, 10, 5)
-    target = st.number_input("Target Score", min_value=1, value=180)
+    bowling_team = st.selectbox(
+        "Bowling Team",
+        teams,
+        index=teams.index(default_bowling)
+    )
+
+target = st.number_input("Target", min_value=1, value=180)
+current_score = st.number_input("Current Score", min_value=0, value=100)
+overs = st.number_input("Overs Completed", min_value=0.0, max_value=20.0, value=10.0)
+wickets_left = st.number_input("Wickets Left", min_value=0, max_value=10, value=5)
+
+# ---- CALCULATIONS ----
+balls_left = int((20 - overs) * 6)
+runs_left = target - current_score
 
 # ---- BUTTON ----
 if st.button("Predict"):
 
-    # validation
     if batting_team == bowling_team:
         st.warning("⚠️ Select different teams")
         st.stop()
 
-    runs_left = target - current_score
     balls_left_safe = max(balls_left, 1)
 
     if runs_left <= 0:
@@ -47,10 +76,10 @@ if st.button("Predict"):
 
     required_run_rate = (runs_left * 6) / balls_left_safe
 
-    overs_completed = (120 - balls_left) / 6
-    current_run_rate = current_score / max(overs_completed, 1)
+    overs_completed = max(overs, 1)
+    current_run_rate = current_score / overs_completed
 
-    # dataframe
+    # ---- DATAFRAME ----
     input_df = pd.DataFrame({
         'batting_team': [batting_team],
         'bowling_team': [bowling_team],
@@ -61,13 +90,13 @@ if st.button("Predict"):
         'required_run_rate': [required_run_rate]
     })
 
-    # prediction
+    # ---- PREDICTION ----
     result = model.predict_proba(input_df)[0]
 
     win_prob = round(result[1] * 100, 2)
     lose_prob = round(result[0] * 100, 2)
 
-    # output
+    # ---- OUTPUT ----
     col1, col2 = st.columns(2)
 
     with col1:
@@ -86,6 +115,7 @@ if st.button("Predict"):
     col2.metric("Req RR", round(required_run_rate, 2))
     col3.metric("Curr RR", round(current_run_rate, 2))
 
+    # ---- STATUS ----
     if win_prob > 70:
         st.success("🔥 Strong winning position")
     elif win_prob > 40:
@@ -93,7 +123,7 @@ if st.button("Predict"):
     else:
         st.error("📉 Under pressure")
 
-    # graph
+    # ---- GRAPH ----
     fig, ax = plt.subplots()
     ax.bar(["Win", "Lose"], [win_prob, lose_prob])
     ax.set_ylabel("Probability (%)")
