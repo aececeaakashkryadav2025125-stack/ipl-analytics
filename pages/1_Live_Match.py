@@ -1,72 +1,55 @@
 import streamlit as st
-from utils.api import get_live_matches
+from utils.api import get_matches
 import time
 
 st.set_page_config(layout="wide")
 
 st.title("🏏 Live Matches (Cricbuzz Style)")
 
-# ---- AUTO REFRESH ----
 REFRESH_SECONDS = 15
 
-# ---- FETCH DATA ----
-matches = get_live_matches()
+# ---- FETCH ----
+matches, match_type = get_matches()
 
 # ---- UI ----
-if matches and len(matches) > 0:
+if matches:
 
-    st.markdown("### 🔴 Live Matches")
+    if match_type == "live":
+        st.success("🔴 Live Matches")
+    elif match_type == "upcoming":
+        st.info("📅 Upcoming Matches")
 
-    cols = st.columns(3)  # 3 cards per row
+    cols = st.columns(3)
 
     for i, match in enumerate(matches[:6]):
 
         with cols[i % 3]:
 
-            st.markdown("### 🟢 MATCH")
-
             team1 = match.get("team1", "Team A")
             team2 = match.get("team2", "Team B")
             venue = match.get("venue", "Unknown Venue")
+            date = match.get("date", "")
+
+            st.markdown("### 🟢 MATCH")
 
             st.markdown(f"**{team1} vs {team2}**")
             st.markdown(f"📍 {venue}")
 
+            if date:
+                st.caption(f"📅 {date}")
+
             st.markdown("---")
 
-            if st.button("🔮 Predict", key=f"predict_{i}"):
-                st.switch_page("pages/2_Predictor.py")
+            st.button("🔮 Predict", key=f"predict_{i}")
 
 else:
-    st.warning("🚫 No live IPL matches right now")
+    st.error("❌ No matches found (API issue or quota exceeded)")
 
-    # ✅ DEMO FALLBACK (VERY IMPORTANT)
-    st.markdown("### 🔁 Demo Match (for testing)")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("## 🟡 CSK")
-        st.markdown("### 120/3")
-        st.markdown("Overs: 12")
-
-    with col2:
-        st.markdown("## 🔵 MI")
-        st.markdown("Bowling")
-
-    st.markdown("---")
-
-    st.info("This is demo data because live API returned no matches")
-
-    if st.button("🔮 Predict Demo Match"):
-        st.switch_page("pages/2_Predictor.py")
-
-    # Debug section
     with st.expander("🔍 Debug API Response"):
         st.write(matches)
 
 # ---- AUTO REFRESH ----
-st.caption(f"🔄 Auto-refreshing every {REFRESH_SECONDS} seconds")
+st.caption(f"🔄 Auto-refresh every {REFRESH_SECONDS} seconds")
 
 time.sleep(REFRESH_SECONDS)
 st.rerun()
