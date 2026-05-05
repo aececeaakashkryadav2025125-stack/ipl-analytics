@@ -1,24 +1,50 @@
-import requests
 import streamlit as st
+import requests
 
-# ✅ DEFINE API KEY (THIS WAS MISSING)
-API_KEY = st.secrets["API_KEY"]
+API_KEY = st.secrets.get("API_KEY", "")
 
-def get_live_matches():
-    url = f"https://api.cricketdata.org/v1/matches?apikey={API_KEY}"
+BASE_URL = "https://api.cricketdata.org/v1/matches"
 
+
+def fetch_matches(params):
     try:
         response = requests.get(
-            url,
+            BASE_URL,
+            params=params,
             headers={"User-Agent": "Mozilla/5.0"},
             timeout=10
         )
-
         data = response.json()
-        matches = data.get("data", [])
-
-        return matches
-
+        return data.get("data", [])
     except Exception as e:
         print("API ERROR:", e)
         return []
+
+
+def get_live_matches():
+    return fetch_matches({
+        "apikey": API_KEY,
+        "status": "live"
+    })
+
+
+def get_upcoming_matches():
+    return fetch_matches({
+        "apikey": API_KEY,
+        "status": "upcoming"
+    })
+
+
+# ✅ THIS IS THE MISSING FUNCTION
+def get_matches():
+    live = get_live_matches()
+
+    if live:
+        return live, "live"
+
+    upcoming = get_upcoming_matches()
+
+    if upcoming:
+        return upcoming, "upcoming"
+
+    return [], "none"
